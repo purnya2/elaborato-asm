@@ -16,21 +16,34 @@ char *strings[8][2]={
 char *options [2]= {"ON", "OFF"};
 
 char inputbuffer[100];
-
+     
               
-int main() {
+int main(int argc, char **argv) {
+
     int selection = 0;
     int subselection = 0;
     int pressed = 0;
-    int selmax = 8;
+    int selmax;
+    int numlampeggi = 3;
+
+
+    if (argc > 1){
+        if (strcmp(argv[1],"2244") == 0){
+            selmax = 8;
+        } else {
+            selmax = 6;
+        }
+    }
 
 
     do {
 
-        printf("\e[1;1H\e[2J"); // codice speciale che elimina i contenuti dello schermo a ogni loop
+        //printf("\e[1;1H\e[2J"); // codice speciale che elimina i contenuti dello schermo a ogni loop
 
         // se premuto
         if(!pressed){
+
+            // TODO non va bene che sia un for loop di tutte le opzioni forse
             // visualizzo la lista principale
             for (int i = 0; i<selmax; i++){
                 if(i == selection){
@@ -59,9 +72,18 @@ int main() {
             }
 
             // Frecce direzione
-            int 
+            int inputfrecce;
             if(selection == 7-1){
-                scanf
+                printf("\nNumero dei lampeggi : %d \n Inserire nuovo valore : ", numlampeggi);
+                scanf("%d", &inputfrecce);
+
+                if (inputfrecce < 2) {
+                    numlampeggi = 2;
+                } else if (inputfrecce > 5) {
+                    numlampeggi = 5;
+                } else {
+                    numlampeggi = inputfrecce;
+                }
             }
         }
 
@@ -99,8 +121,8 @@ int main() {
 
         // loop della selezione su e giu
         if (selection < 1-1) {
-            selection = 6-1;
-        } else if (selection > 6-1) {
+            selection = selmax-1;
+        } else if (selection > selmax-1) {
             selection = 1-1;
         }
 
