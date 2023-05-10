@@ -112,15 +112,19 @@
 _start:
 
     # Check command line argument
+    movl (%esp), %ecx
+    cmpl $1, %ecx
+    jle exitcheck
+
     movl 8(%esp), %esi
     leal superkey, %edi 
-    cmpsb
+    cmpsl
     jne exitcheck
     movl $8, maxselect
     exitcheck:
     
 
-    call clear
+    #call clear
 
     
 
