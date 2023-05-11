@@ -30,7 +30,7 @@
             onoffpartlen2 = . - onoffpart2
 
         on:
-            .string     "ON\n"
+            .string     " ON\n"
             onlen = . - on
 
         off:
@@ -122,10 +122,10 @@
             .string    "15:32\n"
             vlen3 = . - v3 
         v4:
-            .string    "ON\n"
+            .string    " ON\n"
             vlen4 = . - v4 
         v5:
-            .string    "ON\n"
+            .string    " ON\n"
             vlen5 = . - v5 
         v6:
             .string    "\n"
@@ -220,7 +220,6 @@ _start:
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # print selection 
-
         popl %ecx 
         cmpl    selection, %ecx
         pushl %ecx
@@ -286,12 +285,6 @@ _start:
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # SELECTION LOGIC
-        movl    $3, %esi
-        movb    input_buffer(%esi), %cl
-        movb    $10, %ch
-        cmpb    %ch, %cl
-        jne     exitinput
-
         movl $2, %esi        
         movb input_buffer(%esi), %bl
 
@@ -373,6 +366,9 @@ quit:
 
 sm_bloccoautomaticoporte:
     movl $0, subselection
+
+
+    submenuloop:
     call clear
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -397,22 +393,72 @@ sm_bloccoautomaticoporte:
 
     xorl %ecx, %ecx
 
+    onoffloop:
 
-    movl	$1,%ebx	       
-    movl	$4,%eax
-    movl	$onlen,%edx
-    movl	$on,%ecx
-    int	$0x80
+    cmpl $2,%ecx
+    je endonoffloop
 
+    push %ecx
 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # print subselection 
+        popl %ecx 
+        cmpl    subselection, %ecx
+        pushl %ecx
+        jne     notsubselected
 
+        movl	$4,%edx                 # length of the string	       
+        leal	selectedicon,%ecx		# string to write on the screen
+        movl	$1, %ebx		        # file descriptor (stdout)
+        movl	$4,%eax		            # system call number (sys_write)
+        int	$0x80
 
-    movl	$1,%ebx	       
-    movl	$4,%eax
-    movl	$offlen,%edx
-    movl	$off,%ecx
-    int	$0x80
+        jmp exitsubselection
 
+        notsubselected:
+
+        movl	$4,%edx   # length of the string	       
+        leal	notselectedicon,%ecx		# string to write on the screen
+        movl	$1, %ebx		        # file descriptor (stdout)
+        movl	$4,%eax		            # system call number (sys_write)
+        int	$0x80
+
+        exitsubselection:
+    
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # print ON and OFF
+        pop %ecx
+        cmpl $1,%ecx
+        push %ecx
+        je printoff
+
+        movl	$1,%ebx	       
+        movl	$4,%eax
+        movl	$onlen,%edx
+        movl	$on,%ecx
+        int	$0x80
+        jmp exitprintonoff
+
+        printoff:
+
+        movl	$1,%ebx	       
+        movl	$4,%eax
+        movl	$offlen,%edx
+        movl	$off,%ecx
+        int	$0x80
+
+        exitprintonoff:
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    pop %ecx
+
+    addl $1, %ecx
+    jmp onoffloop
+
+    endonoffloop:
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # READ INPUT
@@ -425,18 +471,16 @@ sm_bloccoautomaticoporte:
         int	$0x80  
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-    call clear
+    
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # SUBSELECTION LOGIC
-        movl    $3, %esi
-        movb    input_buffer(%esi), %cl
-        movb    $10, %ch
-        cmpb    %ch, %cl
-        jne     sm_bloccoautomaticoporte
+        movb input_buffer, %bl
+        movb $10, %al
+        cmpb %al, %bl
+        je exitsubmenu
 
         movl $2, %esi        
         movb input_buffer(%esi), %bl
-        movl $12, %esi
 
         cmpb %bl, up
         je selectsubup
@@ -445,28 +489,58 @@ sm_bloccoautomaticoporte:
         je selectsubdown
 
 
-        jmp returntomenuloop
+        jmp exitsubinput
 
         selectsubup:
-        movl $on, %eax
-        movl %eax, values(%esi)
-        movl $onlen, %eax
-        movl %eax, valueslen(%esi)
-        jmp returntomenuloop
+        subl $1, subselection
+        cmpl $-1, subselection
+        jne exitsubinput
+        movl $2, %ebx
+        subl $1, %ebx
+        movl %ebx, subselection
+        jmp exitsubinput
 
         selectsubdown:
-        movl $off, %eax
-        movl %eax, values(%esi)
-        movl $offlen, %eax
-        movl %eax, valueslen(%esi)
-        jmp returntomenuloop
+        addl $1, subselection
+        cmpl $2, subselection
+        jne exitsubinput
+        movl $0, subselection
+        jmp exitsubinput
+
+        exitsubinput:
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+    jmp submenuloop
+
+    exitsubmenu:
+    movl $12, %esi
+    movl subselection, %eax
+    cmpl $1, %eax
+    je setoff
+
+    movl $on, %eax
+    movl %eax, values(%esi)
+    movl $onlen, %eax
+    movl %eax, valueslen(%esi)
+
+    jmp exitseton
+
+    setoff: 
+    movl $off, %eax
+    movl %eax, values(%esi)
+
+    movl $offlen, %eax
+    movl %eax, valueslen(%esi)
+    exitseton:
+
+    call clear
+    jmp returntomenuloop
 
 
 sm_backhome:
     movl $0, subselection
+    submenuloop2:
     call clear
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -491,21 +565,72 @@ sm_backhome:
 
     xorl %ecx, %ecx
 
+    onoffloop2:
 
+    cmpl $2,%ecx
+    je endonoffloop2
 
-    movl	$1,%ebx	       
-    movl	$4,%eax
-    movl	$onlen,%edx
-    movl	$on,%ecx
-    int	$0x80
+    push %ecx
 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # print subselection 
+        popl %ecx 
+        cmpl    subselection, %ecx
+        pushl %ecx
+        jne     notsubselected2
 
-    movl	$1,%ebx	       
-    movl	$4,%eax
-    movl	$offlen,%edx
-    movl	$off,%ecx
-    int	$0x80
+        movl	$4,%edx                 # length of the string	       
+        leal	selectedicon,%ecx		# string to write on the screen
+        movl	$1, %ebx		        # file descriptor (stdout)
+        movl	$4,%eax		            # system call number (sys_write)
+        int	$0x80
 
+        jmp exitsubselection2
+
+        notsubselected2:
+
+        movl	$4,%edx   # length of the string	       
+        leal	notselectedicon,%ecx		# string to write on the screen
+        movl	$1, %ebx		        # file descriptor (stdout)
+        movl	$4,%eax		            # system call number (sys_write)
+        int	$0x80
+
+        exitsubselection2:
+    
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # print ON and OFF
+        pop %ecx
+        cmpl $1,%ecx
+        push %ecx
+        je printoff2
+
+        movl	$1,%ebx	       
+        movl	$4,%eax
+        movl	$onlen,%edx
+        movl	$on,%ecx
+        int	$0x80
+        jmp exitprintonoff2
+
+        printoff2:
+
+        movl	$1,%ebx	       
+        movl	$4,%eax
+        movl	$offlen,%edx
+        movl	$off,%ecx
+        int	$0x80
+
+        exitprintonoff2:
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    pop %ecx
+
+    addl $1, %ecx
+    jmp onoffloop2
+
+    endonoffloop2:
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # READ INPUT
@@ -518,19 +643,17 @@ sm_backhome:
         int	$0x80  
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-    call clear
+    
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # SUBSELECTION LOGIC
+        movb input_buffer, %bl
+        movb $10, %al
+        cmpb %al, %bl
+        je exitsubmenu2
 
-        movl    $3, %esi
-        movb    input_buffer(%esi), %cl
-        movb    $10, %ch
-        cmpb    %ch, %cl
-        jne     sm_backhome
 
         movl $2, %esi        
         movb input_buffer(%esi), %bl
-        movl $16, %esi
 
         cmpb %bl, up
         je selectsubup2
@@ -538,23 +661,53 @@ sm_backhome:
         cmpb %bl, down
         je selectsubdown2
 
-        jmp returntomenuloop
+        jmp exitsubinput2
 
         selectsubup2:
-        movl $on, %eax
-        movl %eax, values(%esi)
-        movl $onlen, %eax
-        movl %eax, valueslen(%esi)
-        jmp returntomenuloop
+        subl $1, subselection
+        cmpl $-1, subselection
+        jne exitsubinput2
+        movl $2, %ebx
+        subl $1, %ebx
+        movl %ebx, subselection
+        jmp exitsubinput2
 
         selectsubdown2:
-        movl $off, %eax
-        movl %eax, values(%esi)
-        movl $offlen, %eax
-        movl %eax, valueslen(%esi)
-        jmp returntomenuloop
+        addl $1, subselection
+        cmpl $2, subselection
+        jne exitsubinput2
+        movl $0, subselection
+        jmp exitsubinput2
+
+        exitsubinput2:
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    jmp submenuloop2
+
+    exitsubmenu2:
+    movl $16, %esi
+    movl subselection, %eax
+    cmpl $1, %eax
+    je setoff2
+
+    movl $on, %eax
+    movl %eax, values(%esi)
+    movl $onlen, %eax
+    movl %eax, valueslen(%esi)
+
+    jmp exitseton2
+
+    setoff2: 
+    movl $off, %eax
+    movl %eax, values(%esi)
+
+    movl $offlen, %eax
+    movl %eax, valueslen(%esi)
+    exitseton2:
+
+    call clear
+    jmp returntomenuloop
 
 
 sm_frecciedirezione:
