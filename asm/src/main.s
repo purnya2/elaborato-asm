@@ -2,7 +2,7 @@
 
 # Compile: as --march=i386 --32 ./hello_world_gas.s -o hello_world_gas.o
 #    Link: ld -m elf_i386 hello_world_gas.o -o hello_world_gas
-# as --march=i386 --32 test.s -o test.o && ld -m elf_i386 test.o -o test && ./test
+# as --march=i386 --32 main.s -o main.o && ld -m elf_i386 main.o -o main && ./main
 
 ###########################################################################
 
@@ -11,8 +11,7 @@
 
     dot:
         .string "."
-    newline:
-        .string "\n"
+
 
     timespec:
         .long 0
@@ -61,8 +60,7 @@
         .string "[o] "
     selection: 
         .long 0
-    subselection: 
-        .long 0
+
     maxselect:
         .long 6
 
@@ -372,9 +370,8 @@ quit:
 
 
 sm_bloccoautomaticoporte:
-    movl $0, subselection
     call clear
-
+    
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # print title 
         movl	$1,%ebx	       
@@ -466,7 +463,6 @@ sm_bloccoautomaticoporte:
 
 
 sm_backhome:
-    movl $0, subselection
     call clear
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
