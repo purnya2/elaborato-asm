@@ -1,58 +1,9 @@
-##########################################################################
-
-# Compile: as --march=i386 --32 ./hello_world_gas.s -o hello_world_gas.o
-#    Link: ld -m elf_i386 hello_world_gas.o -o hello_world_gas
-# as --march=i386 --32 main.s -o main.o && ld -m elf_i386 main.o -o main && ./main
-
-###########################################################################
-
 
 .data
 
-    dot:
-        .string "."
+    # variable that reserves space of 64 bytes as a buffer for the sys_read call
+    input_buffer: .space 64
 
-
-    timespec:
-        .long 0
-        .long  5000000000
-    # variable that reserves space of 128 bytes as a buffer for the sys_read call
-    input_buffer: .space 128
-
-    # ### Sub Menu options####################################################
-        onoffpart1:
-            .string     "/---- "
-            onoffpartlen1 = . - onoffpart1
-
-        onoffpart2:
-            .string     "----/\n"
-            onoffpartlen2 = . - onoffpart2
-
-        on:
-            .string     "ON\n"
-            onlen = . - on
-
-        off:
-            .string     "OFF\n"
-            offlen = . - off
-
-        pressione:
-            .string     "\nPressione gomme resettata\n"
-            pressionelen = . - pressione
-        
-        lampeggi:
-            .long 3
-        lampeggiascii:
-            .byte '0'
-
-        lampeggimsg:
-            .string     "\nNumero dei lampeggi corrente : "
-            lampeggimsglen = . - lampeggimsg
-        lampeggimsginput:
-            .string     "\ninserisci nuovo numero di lampeggi (da 2 a 6) : "
-            lampeggimsginputlen = . - lampeggimsginput
-
-    # ########################################################################
 
     notselectedicon: 
         .string "[ ] "
@@ -71,11 +22,8 @@
     right:
         .byte 'C'
 
-    # Escape sequence(a special set of characters) that communicate the terminal to clear the view
-    # this is outputted at each loop, so that the view of the menu looks seamless
-    clearcode:
-        .byte 27, '[', '1', ';', '1', 'H', 27, '[', '2', 'J', 0
-        lenclear = . - clearcode
+    lampeggi:
+            .long 3
 
     # ### Menu options########################################################
         opt1:
@@ -139,7 +87,7 @@
 
 
 
-    # these both are arrays that contain pointers towards the various strings and lenghts
+    # arrays of pointers towards the options, values, and their lengths
         options:
             .long opt1, opt2, opt3, opt4, opt5, opt6, opt7, opt8
         optionslen:
@@ -150,548 +98,250 @@
             
         valueslen:
             .long vlen1, vlen2, vlen3, vlen4, vlen5, vlen6, vlen7, vlen8
-    
+    #key required to access supervisore mode
     superkey: 
         .string "2244"
 
-
-
 .global  _start
-
-
 .text
-
-clear:
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # CLEAR THE SCREEN
-        movl	$lenclear,%edx	        # message length
-        movl	$clearcode,%ecx		    # message to write
-        movl	$1, %ebx		        # file descriptor (stdout)
-        movl	$4,%eax		            # system call number (sys_write)
-        int	$0x80                       # call kernel
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-    ret
-
 
 _start:
 
+    call clear # Clear the screen
 
-    call clear
+    # Check command line argument count
+    movl    (%esp), %ecx
+    cmpl    $1, %ecx
+    jle     exitcheck
 
+    # compare the string of the first argument with the superkey variable
+    movl    8(%esp), %esi
+    leal    superkey, %edi 
+    cmpsl                                   # compare the strings stored in %esi and %edi (usually cmpsl ALWAYS compares ONLY between %esi and %edi)
+    jne     exitcheck                       # if it's not equal, don't do the following operations and exit to this label
 
-    # Check command line argument
-    movl (%esp), %ecx
-    cmpl $1, %ecx
-    jle exitcheck
+    movl    $opt1supervisor, options        # Modify the first option to make it look like "Setting Automobile (supervisor):"
+    movl    $len1supervisor, optionslen     # Modify the length as well, as it's necessary for the sys_write call
 
-    movl 8(%esp), %esi
-    leal superkey, %edi 
-    cmpsl
-    jne exitcheck
+    movl    $8, maxselect                   # increase the amount of menu options that will be shown
 
-
-    movl    $opt1supervisor, options
-    movl    $len1supervisor, optionslen
-
-    movl    $8, maxselect
     exitcheck:
-    
 
-    #call clear
-
-    
-
-    movl $0, %ecx # ecx here is used as a variable for the index value
-    movl $0, %esi # this contains the shift value used to iterate through an array. (in C, it's used as if we're doing "array[esi]")
-
-    
-
-    menuloop: # loop that shows the main menu
-
-
-
-    cmpl maxselect,%ecx # If the index has reached the end of the iterations, then we jump to the endloop label
-    je endmenuloop
-
-    pushl %ecx # temporarily push in the stuck the index of the loop inside ecx on top of the stack, because we need to use the register for the sys_write interrupt
+    movl    $0, %ecx                        # ecx here is used as a variable for the index value that we use loop through 6 times (8 if the supervisore mode is enabled)
+    movl    $0, %esi                        # this contains the shift value used to iterate through an array. (in C, it's used as if we're doing "array[esi]")
 
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # print selection 
-
-        popl %ecx 
-        cmpl    selection, %ecx
-        pushl %ecx
-        jne     notselected
-
-        movl	$4,%edx                 # length of the string	       
-        leal	selectedicon,%ecx		# string to write on the screen
-        movl	$1, %ebx		        # file descriptor (stdout)
-        movl	$4,%eax		            # system call number (sys_write)
-        int	$0x80
-
-        jmp exitselection
-
-        notselected:
-
-        movl	$4,%edx   # length of the string	       
-        leal	notselectedicon,%ecx		# string to write on the screen
-        movl	$1, %ebx		        # file descriptor (stdout)
-        movl	$4,%eax		            # system call number (sys_write)
-        int	$0x80
-
-        exitselection:
+    # START OF THE MENU LOOP
     
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+        menuloop: # start of the loop that shows the main menu by showing the lines loop by loop
+
+        cmpl    maxselect,%ecx              # If the index has reached the end of the iterations(6 or 8), then we jump to the endloop label, in order to, well, end the loop
+        je      endmenuloop
+
+        pushl   %ecx                        # temporarily push in the stack the index of the loop inside ecx, on top of the stack, 
+                                            # because we need to use the ECX register for the sys_write interrupt
 
 
-    movl	optionslen(%esi),%edx   # length of the string	       
-    movl	options(%esi),%ecx		# string to write on the screen
-    movl	$1, %ebx		        # file descriptor (stdout)
-    movl	$4,%eax		            # system call number (sys_write)
-    int	$0x80    
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        # PRINT SELECTION (EITHER [ ] OR [o])
 
-    movl	valueslen(%esi),%edx   # length of the string	       
-    movl	values(%esi),%ecx		# string to write on the screen
-    movl	$1, %ebx		        # file descriptor (stdout)
-    movl	$4,%eax		            # system call number (sys_write)
-    int	$0x80  
+            popl    %ecx                    # Temporarily retrieve from the stack what position/index we're in
+            cmpl    selection, %ecx         # Check if the current number line matches with the number of the selection.
+            pushl   %ecx                    # Put back in the stack the position/index
+            jne     notselected             # If it's not equal, jump to the label that prints "[ ] ", otherwise do the following that will print "[o] "
 
-    popl %ecx # get back the index value by popping the stack and putting the value onto ecx
+            movl	$4,%edx                 # length of the string (if you count "[o] " you can see that it's made of 4 characters/4 bytes)	       
+            leal	selectedicon,%ecx		# string to write on the screen (print "[o] ")
+            movl	$1, %ebx		        # file descriptor (stdout)
+            movl	$4,%eax		            # system call number (sys_write)
+            int	    $0x80                   # poke the kernel to tell it that we want to (EAX)SYS_WRITE the (ECX)string that is (EDX)4 bytes long in the (EBX)stdout
 
-    addl $1, %ecx
-    addl $4, %esi # we shift by 4 the value of esi because the arrays are composed of pointers that are 4 bytes long
+            jmp exitselection               # Here we have printed "[o] "! if we don't want to also print "[ ] " we must jump into this label in order to avoid the next lines of code
 
-    jmp menuloop # repeat the loop
+            notselected:                    # If we have to write "[ ] " we need to be jumped here
+
+            movl	$4,%edx                 # length of the string (if you count "[ ] " you can see that it's STILL made of 4 characters/4 bytes)	       
+            leal	notselectedicon,%ecx    # string to write on the screen (print "[ ] ")
+            movl	$1, %ebx		        # file descriptor (stdout)
+            movl	$4,%eax		            # system call number (sys_write)
+            int	    $0x80                   # poke the kernel to tell it that we want to (EAX)SYS_WRITE the (ECX)string that is (EDX)4 bytes long in the (EBX)stdout
+
+            exitselection:
+            
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 
-    endmenuloop:
+        #here we access the arrays optionslen and options. We shift the position of the index by updating the %esi value in each loop
+        movl	optionslen(%esi),%edx   # length of the string      
+        movl	options(%esi),%ecx		# string to write on the screen
+        movl	$1, %ebx		        # file descriptor (stdout)
+        movl	$4,%eax		            # system call number (sys_write)
+        int	    $0x80    
 
+        #here we access the arrays valueslen and values. We shift the position of the index by updating the %esi value in each loop
+        movl	valueslen(%esi),%edx    # length of the string	       
+        movl	values(%esi),%ecx		# string to write on the screen
+        movl	$1, %ebx		        # file descriptor (stdout)
+        movl	$4,%eax		            # system call number (sys_write)
+        int	    $0x80  
+
+        popl    %ecx                    # get back the index value by popping the stack and putting the value onto ecx
+
+        addl    $1, %ecx                # add 1 to ECX, this is the same as doing i++ in a for loop in C
+        addl    $4, %esi                # we shift by 4 the value of esi because the arrays are composed of pointers that are 4 bytes long
+
+        jmp     menuloop                # repeat the loop
+
+        endmenuloop:
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
  
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # READ INPUT
-        movl $0, input_buffer
+        movl    $0, input_buffer        # reset the input_buffer (we need to do this because the input_buffer contains dirty values from previous iterations)
 
         movl	$128,%edx	            # length of the buffer
         movl	$input_buffer,%ecx		# where to store the bufffer
         movl	$0, %ebx		        # file descriptor (stdin)
         movl	$3,%eax		            # system call number (sys_read)
         int	$0x80  
-
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-    movb input_buffer, %bl
-    call clear
+
+    call    clear
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # SELECTION LOGIC
-        movl    $3, %esi
+    # SELECTION LOGIC  
+        # This is the part where we handle how the movement of the selection goes thanks to the input by the user
+
+
+        # We first need to check of the input is valid. We are specifically checking here if there's an escape character($10) in the 
+        # third byte of the input. This is to invalidate an output that looks like up+up+enter or down+right+enter. 
+        # I have decided that the only inputs that are valid are strictly up+enter, down+enter, right+enter
+        movl    $3, %esi                
         movb    input_buffer(%esi), %cl
         movb    $10, %ch
-        cmpb    %ch, %cl
-        jne     exitinput
+        cmpb    %ch, %cl    
+        jne     exitselectionlogic              # Invalid input was found! exit the selection logic section without doing any change
 
-        movl $2, %esi        
+        movl $2, %esi
         movb input_buffer(%esi), %bl
 
-        cmpb %bl, up
+        cmpb %bl, up                            # Check ARROW UP
         je selectup
 
-        cmpb %bl, down
+        cmpb %bl, down                          # Check ARROW DOWN
         je selectdown
 
-        cmpb %bl, right
-        je sottomenu
+        cmpb %bl, right                         # Check ARROW RIGHT
+        je sottomenu                            # if the arrow right is selected, we will hop into a sottomenu
 
-        jmp exitinput
+        jmp exitselectionlogic
 
-        selectup:
+        selectup:                               # handle arrow up
         subl $1, selection
         cmpl $-1, selection
-        jne exitinput
+        jne exitselectionlogic
         movl maxselect, %ebx
         subl $1, %ebx
         movl %ebx, selection
-        jmp exitinput
+        jmp exitselectionlogic
 
-        selectdown:
+        selectdown:                             # handle arrow down
         addl $1, selection
         movl maxselect, %ebx
         cmpl %ebx, selection
-        jne exitinput
+        jne exitselectionlogic
         movl $0, selection
-        jmp exitinput
+        jmp exitselectionlogic
 
-        exitinput:
-
+        exitselectionlogic:
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     returntomenuloop:
-    xor %ecx, %ecx # reset the register ecx
-    xor %esi, %esi # reset the register esi
 
-    jmp menuloop
+    # In order to avoid unexpected behavior, we reset the following registers
+    xorl    %ecx, %ecx                  # reset the register ecx
+    xorl    %esi, %esi                  # reset the register esi
+
+    jmp     menuloop
+
+
 sottomenu:
-    cmpl    $0, selection # Setting Automobile
-    je returntomenuloop  
+    cmpl    $0, selection               # Setting Automobile 
+    je      returntomenuloop  
 
-    cmpl    $1, selection # Data
-    je returntomenuloop
+    cmpl    $1, selection               # Data !! NOT IMPLEMENTED !!
+    je      returntomenuloop
 
-    cmpl    $2, selection # Ora
-    je returntomenuloop
+    cmpl    $2, selection               # Ora !! NOT IMPLEMENTED !!
+    je      returntomenuloop
 
-    cmpl    $3, selection # Blocco automatico porte
-    je sm_bloccoautomaticoporte
+    cmpl    $3, selection               # Blocco automatico porte
+    je      sm_bloccoautomaticoporte
 
-    cmpl    $4, selection # Back-home
-    je sm_backhome
+    cmpl    $4, selection               # Back-home
+    je      sm_backhome
 
-    cmpl    $5, selection # Check Olio
-    je returntomenuloop
+    cmpl    $5, selection               # Check Olio !! NOT IMPLEMENTED !!
+    je      returntomenuloop
 
-    cmpl    $6, selection # Freccie direzione
-    je sm_frecciedirezione
+    cmpl    $6, selection               # Freccie direzione
+    je      sm_frecciedirezione
 
-    cmpl    $7, selection # Reset pressione Gomme
-    je sm_pressionegomme
-
-
-    je returntomenuloop
+    cmpl    $7, selection               # Reset pressione Gomme
+    je      sm_pressionegomme
 
 
-
-quit:
-    xor %eax, %eax
-
-    mov    $1,%al               # 1 = Syscall for Exit()
-    mov    $0,%ebx              # The status code we want to provide.
-    int    $0x80                # Poke kernel. This will end the program.
-
+    je      returntomenuloop
 
 
 sm_bloccoautomaticoporte:
-    call clear
-    
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # print title 
-        movl	$1,%ebx	       
-        movl	$4,%eax
-        movl	$onoffpartlen1,%edx
-        movl	$onoffpart1,%ecx
-        int	$0x80
+    call    clear
 
-        movl	$4,%eax
-        movl	$len4,%edx
-        movl	$opt4,%ecx
-        int	$0x80
+    movl    $opt4, %ecx                 # ECX is used in the function to store the string of the title
+    movl    $len4, %edx                 # EDX is used in the function to store the length of the title
 
-        movl	$4,%eax
-        movl	$onoffpartlen2,%edx
-        movl	$onoffpart2,%ecx
-        int	$0x80
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    call    onoffmenu                   # Function onoffmenu
+    movl    $12, %esi
+
+    # Modify the values in the right position
+    movl    %eax, values(%esi)
+    movl    %ebx, valueslen(%esi)
 
 
-    xorl %ecx, %ecx
-
-
-    movl	$1,%ebx	       
-    movl	$4,%eax
-    movl	$onlen,%edx
-    movl	$on,%ecx
-    int	$0x80
-
-
-
-
-    movl	$1,%ebx	       
-    movl	$4,%eax
-    movl	$offlen,%edx
-    movl	$off,%ecx
-    int	$0x80
-
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # READ INPUT
-        movl $0, input_buffer
-
-        movl	$128,%edx	            # length of the buffer
-        movl	$input_buffer,%ecx		# where to store the bufffer
-        movl	$0, %ebx		        # file descriptor (stdin)
-        movl	$3,%eax		            # system call number (sys_read)
-        int	$0x80  
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-    call clear
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # SUBSELECTION LOGIC
-        movl    $3, %esi
-        movb    input_buffer(%esi), %cl
-        movb    $10, %ch
-        cmpb    %ch, %cl
-        jne     sm_bloccoautomaticoporte
-
-        movl $2, %esi        
-        movb input_buffer(%esi), %bl
-        movl $12, %esi
-
-        cmpb %bl, up
-        je selectsubup
-
-        cmpb %bl, down
-        je selectsubdown
-
-
-        jmp returntomenuloop
-
-        selectsubup:
-        movl $on, %eax
-        movl %eax, values(%esi)
-        movl $onlen, %eax
-        movl %eax, valueslen(%esi)
-        jmp returntomenuloop
-
-        selectsubdown:
-        movl $off, %eax
-        movl %eax, values(%esi)
-        movl $offlen, %eax
-        movl %eax, valueslen(%esi)
-        jmp returntomenuloop
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
+    jmp returntomenuloop
 
 
 sm_backhome:
+
     call clear
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # print title 
-        movl	$1,%ebx	       
-        movl	$4,%eax
-        movl	$onoffpartlen1,%edx
-        movl	$onoffpart1,%ecx
-        int	$0x80
+    movl $opt5, %ecx
+    movl $len5, %edx
 
-        movl	$4,%eax
-        movl	$len5,%edx
-        movl	$opt5,%ecx
-        int	$0x80
+    call onoffmenu
+    movl $16, %esi                      # notice how the value is +4 compared to the previous sottomenu
 
-        movl	$4,%eax
-        movl	$onoffpartlen2,%edx
-        movl	$onoffpart2,%ecx
-        int	$0x80
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    movl %eax, values(%esi)
+    movl %ebx, valueslen(%esi)
 
+    jmp returntomenuloop
 
-    xorl %ecx, %ecx
-
-
-
-    movl	$1,%ebx	       
-    movl	$4,%eax
-    movl	$onlen,%edx
-    movl	$on,%ecx
-    int	$0x80
-
-
-    movl	$1,%ebx	       
-    movl	$4,%eax
-    movl	$offlen,%edx
-    movl	$off,%ecx
-    int	$0x80
-
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # READ INPUT
-        movl $0, input_buffer
-
-        movl	$128,%edx	            # length of the buffer
-        movl	$input_buffer,%ecx		# where to store the bufffer
-        movl	$0, %ebx		        # file descriptor (stdin)
-        movl	$3,%eax		            # system call number (sys_read)
-        int	$0x80  
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-    call clear
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # SUBSELECTION LOGIC
-
-        movl    $3, %esi
-        movb    input_buffer(%esi), %cl
-        movb    $10, %ch
-        cmpb    %ch, %cl
-        jne     sm_backhome
-
-        movl $2, %esi        
-        movb input_buffer(%esi), %bl
-        movl $16, %esi
-
-        cmpb %bl, up
-        je selectsubup2
-
-        cmpb %bl, down
-        je selectsubdown2
-
-        jmp returntomenuloop
-
-        selectsubup2:
-        movl $on, %eax
-        movl %eax, values(%esi)
-        movl $onlen, %eax
-        movl %eax, valueslen(%esi)
-        jmp returntomenuloop
-
-        selectsubdown2:
-        movl $off, %eax
-        movl %eax, values(%esi)
-        movl $offlen, %eax
-        movl %eax, valueslen(%esi)
-        jmp returntomenuloop
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
 sm_frecciedirezione:
 
-    call clear
+    movl lampeggi, %eax                 # EAX is used in the function to let it know how many LAMPEGGI we got
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # print title 
-        movl	$1,%ebx	       
-        movl	$4,%eax
-        movl	$onoffpartlen1,%edx
-        movl	$onoffpart1,%ecx
-        int	$0x80
-
-        movl	$4,%eax
-        movl	$opt7,%ecx
-        movl	$len7,%edx     
-        int	$0x80
-
-        movl	$4,%eax
-        movl	$onoffpartlen2,%edx
-        movl	$onoffpart2,%ecx
-        int	$0x80
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-    movl	$4,%eax
-    movl	$lampeggimsglen,%edx
-    movl	$lampeggimsg,%ecx
-    int	$0x80
-
-
-    movl	$4,%eax
-    movl	$1,%edx
-    movl    lampeggi, %ecx
-    addl    $48, %ecx
-    movl    %ecx, lampeggiascii
-    movl    $lampeggiascii, %ecx
-    int	$0x80
-
-    movl	$4,%eax
-    movl	$lampeggimsginputlen,%edx
-    movl	$lampeggimsginput,%ecx
-    int	$0x80
-
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # READ INPUT
-        movl $0, input_buffer
-
-        movl	$128,%edx	            # length of the buffer
-        movl	$input_buffer,%ecx		# where to store the bufffer
-        movl	$0, %ebx		        # file descriptor (stdin)
-        movl	$3,%eax		            # system call number (sys_read)
-        int	$0x80  
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-
-    # movl $4
-    # movb input_buffer, %bl
-    # movb $10, %al
-    # cmpb %al, %bl
-
-    call clear
-
-    movl    $1, %esi
-    movb    input_buffer(%esi), %cl
-    movb    $10, %ch
-    cmpb    %ch, %cl
-    jne     skip3
-
-
-    movb    input_buffer, %cl
-    subb    $48, %cl 
-
-    movb    $2, %ch
-    cmpb    %ch, %cl 
-    jg      skip1
-    movb    %ch, lampeggi
-    jmp returntomenuloop
-
-    skip1:
-
-    movb    $6, %ch 
-    cmpb    %ch, %cl 
-    jl      skip2
-    movb    %ch, lampeggi
-    jmp returntomenuloop
-
-    skip2:
-    movb    %cl, lampeggi
-
-    jmp returntomenuloop
-
-    skip3:
-    movb    $6, %ch
-    movb    %ch, lampeggi
+    movl $opt7, %ecx
+    movl $len7, %edx
+    
+    call frecciedirezione
+    movb %ah, lampeggi                  # Set new value for LAMPEGGI
     jmp returntomenuloop
 
     
 
 sm_pressionegomme:
-
-    
-
-    xorl %ecx, %ecx
-
-    pressioneloop:
-    cmpl $3, %ecx
-    push %ecx
-    je exitpressioneloop
-
-
-    movl $162, %eax
-    movl $timespec, %ebx
-    int $0x80
-
-    movl	$1,%edx     
-    movl	$dot,%ecx
-    movl	$1, %ebx		
-    movl	$4,%eax		       
-    int	$0x80
-    pop %ecx
-
-    incl    %ecx
-    jmp pressioneloop
-    exitpressioneloop:
-    movl $162, %eax
-    movl $timespec, %ebx
-    int $0x80
-    movl	$pressionelen,%edx             
-    movl	$pressione,%ecx		
-    movl	$1, %ebx	    
-    movl	$4,%eax		  
-    int	$0x80
-
-    movl $1, timespec
-
-    movl $162, %eax
-    movl $timespec, %ebx
-    int $0x80
-
-    call clear
-
+    call pressionegomme                 # pretty simple function
     jmp returntomenuloop

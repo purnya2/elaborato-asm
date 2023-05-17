@@ -2,17 +2,24 @@
 # filename: onoffmenu.s
 ###########################################################################
 
-.section 
-.data
+.section .data
 
-    onoffpart1:
+    input_buffer: .space 64
+
+    header1:
         .string     "/---- "
-        onoffpartlen1 = . - onoffpart1
+        headerlen1 = . - header1
 
-    onoffpart2:
+    header2:
         .string     "----/\n"
-        onoffpartlen2 = . - onoffpart2
+        headerlen2 = . - header2
 
+    instructionson:
+        .string     "Freccia SU + <invio> per selezionare ON\n"
+        instructionsonlen = . - instructionson
+    instructionsoff:
+        .string     "Freccia GIU + <invio> per selezionare OFF\n"
+        instructionsofflen = . - instructionsoff
     on:
         .string     "ON\n"
         onlen = . - on
@@ -21,29 +28,59 @@
         .string     "OFF\n"
         offlen = . - off
 
+    up:
+        .byte 'A'
+    down:
+        .byte 'B'
+
+.section .bss
+    .lcomm title, 4
+    .lcomm length, 4
+
+    
+
+
+.section .text
 .global onoffmenu
+
 
 .type onoffmenu, @function
 # di cosa ha bisogno:
 # the esi offset, $options, $optionslen, $input_buffer
 
+
 onoffmenu:
+    movl %edx, length
+    movl %ecx, title
+
+    invalidinputrepeat:
+
+
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # print title 
+    # PRINT TITLE
+
+        # print "/---- "
         movl	$1,%ebx	       
         movl	$4,%eax
-        movl	$onoffpartlen1,%edx
-        movl	$onoffpart1,%ecx
+        movl	$headerlen1,%edx
+        movl	$header1,%ecx
         int	$0x80
 
+
+        # print title
+        movl	$1,%ebx	       
         movl	$4,%eax
-        movl	$len4,%edx
-        movl	$opt4,%ecx
+        movl	length,%edx
+        movl	title,%ecx
         int	$0x80
 
+        int	$0x80
+
+        # print "----/\n"
         movl	$4,%eax
-        movl	$onoffpartlen2,%edx
-        movl	$onoffpart2,%ecx
+        movl	$headerlen2,%edx
+        movl	$header2,%ecx
         int	$0x80
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -53,17 +90,14 @@ onoffmenu:
 
     movl	$1,%ebx	       
     movl	$4,%eax
-    movl	$onlen,%edx
-    movl	$on,%ecx
+    movl	$instructionsonlen,%edx
+    movl	$instructionson,%ecx
     int	$0x80
-
-
-
 
     movl	$1,%ebx	       
     movl	$4,%eax
-    movl	$offlen,%edx
-    movl	$off,%ecx
+    movl	$instructionsofflen,%edx
+    movl	$instructionsoff,%ecx
     int	$0x80
 
 
@@ -78,40 +112,39 @@ onoffmenu:
         int	$0x80  
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+    
     call clear
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # SUBSELECTION LOGIC
         movl    $3, %esi
         movb    input_buffer(%esi), %cl
-        movb    $10, %ch
+        movb    $10, %ch                # check if the third byte has the escape character
         cmpb    %ch, %cl
-        jne     sm_bloccoautomaticoporte
+        jne     invalidinputrepeat
 
-        movl $2, %esi        
-        movb input_buffer(%esi), %bl
-        movl $12, %esi
+        movl    $2, %esi        
+        movb    input_buffer(%esi), %bl
 
-        cmpb %bl, up
-        je selectsubup
+        cmpb    %bl, up
+        je      selectsubup             
 
-        cmpb %bl, down
-        je selectsubdown
+        cmpb    %bl, down
+        je      selectsubdown
 
 
-        ret
+        jne     invalidinputrepeat
 
         selectsubup:
-        movl $on, %eax
-        movl %eax, values(%esi)
-        movl $onlen, %eax
-        movl %eax, valueslen(%esi)
+        movl    $on, %eax
+        movl    $onlen, %ebx
         ret
 
         selectsubdown:
-        movl $off, %eax
-        movl %eax, values(%esi)
-        movl $offlen, %eax
-        movl %eax, valueslen(%esi)
+        movl    $off, %eax
+        movl    $offlen, %ebx
         ret
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
