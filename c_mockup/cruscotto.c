@@ -33,23 +33,25 @@ int main(int argc, char **argv) {
         } else {
             selmax = 6;
         }
+    } else {
+        selmax = 6;
     }
 
 
     do {
 
-        //printf("\e[1;1H\e[2J"); // codice speciale che elimina i contenuti dello schermo a ogni loop
+        printf("\e[1;1H\e[2J"); // codice speciale che elimina i contenuti dello schermo a ogni loop
 
         // se premuto
         if(!pressed){
-
             // TODO non va bene che sia un for loop di tutte le opzioni forse
             // visualizzo la lista principale
             for (int i = 0; i<selmax; i++){
+
                 if(i == selection){
-                    printf("\033[31;1;4m[%d]\033[0m ", i+1);
+                    printf("[o] ");
                 } else{
-                    printf("[%d] ", i+1);
+                    printf("[ ] ");
 
                 }
                 printf("%s", strings[i][0]);
