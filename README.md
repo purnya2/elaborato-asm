@@ -3,7 +3,7 @@
 ## Istruzioni per la compilazione e l'esecuzione:
 
 E' abbastanza semplice, basta che entrate da linux sulla cartella asm
-dopodiché avviate questo comando :
+e avviate questo comando :
 
 ``` 
 make 
