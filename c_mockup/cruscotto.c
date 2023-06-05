@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include<time.h>
 
 
 char *strings[8][2]={
@@ -16,6 +17,36 @@ char *strings[8][2]={
 char *options [2]= {"ON", "OFF"};
 
 char inputbuffer[100];
+
+void onoffmenu(int selection){
+
+    int exitloop=0;
+
+    printf("%s\n", strings[selection][0]);
+    printf("premi freccia su + invio per selezionare ON\n");
+    printf("premi freccia su + invio per selezionare OFF\n");
+    while(!exitloop){
+        fgets(inputbuffer, 100, stdin);
+
+        switch(inputbuffer[2]) {
+                case 65: // Up arrow
+                    strings[selection][1] = options[0];
+                    exitloop=1;                    
+                    break;
+                case 66: // Down arrow
+                    strings[selection][1] = options[1];
+                    exitloop=1;
+
+                    break;
+            }
+
+        for(size_t i=0; i < sizeof inputbuffer; ++i){
+            inputbuffer[i] = 0;
+        }
+
+    }
+    
+}
      
               
 int main(int argc, char **argv) {
@@ -25,6 +56,7 @@ int main(int argc, char **argv) {
     int pressed = 0;
     int selmax;
     int numlampeggi = 3;
+
 
 
     if (argc > 1){
@@ -39,6 +71,7 @@ int main(int argc, char **argv) {
 
 
     do {
+        int skip = 0;
 
         printf("\e[1;1H\e[2J"); // codice speciale che elimina i contenuti dello schermo a ogni loop
 
@@ -59,20 +92,17 @@ int main(int argc, char **argv) {
 
             }
         } else {
-            printf("%s\n", strings[selection][0]);
+            
 
             // ON-OFF
             if(selection == 4-1 || selection == 5-1){
-                for (int i = 0; i< 2; i++){
-                    if(i == subselection){
-                        printf("\033[31;1;4m[%d]\033[0m ", i+1);
-                    } else{
-                        printf("[%d] ", i+1);
-                    }
-                    printf("%s\n", options[i]);
-                }
-            }
 
+                onoffmenu(selection);
+                skip = 1;
+                pressed = 0;
+            }
+            
+            printf("%s\n", strings[selection][0]);
             // Frecce direzione
             int inputfrecce;
             if(selection == 7-1){
@@ -87,8 +117,25 @@ int main(int argc, char **argv) {
                     numlampeggi = inputfrecce;
                 }
             }
+
+            if(selection == 8-1){
+                struct timespec ts;
+                ts.tv_sec = 1000 / 1000;
+                ts.tv_nsec = (1000 % 1000) * 1000000;
+                printf(".");
+                printf(".");
+                printf(".");
+
+                printf("pressione gomma resettata!\n");
+                nanosleep(&ts, &ts);
+                skip =1;
+                pressed = 0;
+
+
+            }
         }
 
+        if(!skip){
         // prendo il carattere necessario
         fgets(inputbuffer, 100, stdin);
 
@@ -148,6 +195,8 @@ int main(int argc, char **argv) {
 
         for(size_t i=0; i < sizeof inputbuffer; ++i){
             inputbuffer[i] = 0;
+        }
+
         }
 
     } while(1);
