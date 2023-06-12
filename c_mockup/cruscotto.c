@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include<time.h>
+#include <time.h>
 
 
 char *strings[8][2]={
@@ -25,14 +25,19 @@ void onoffmenu(int selection){
     printf("%s\n", strings[selection][0]);
     printf("premi freccia su + invio per selezionare ON\n");
     printf("premi freccia su + invio per selezionare OFF\n");
+    
     while(!exitloop){
+    
         fgets(inputbuffer, 100, stdin);
 
         switch(inputbuffer[2]) {
+        
                 case 65: // Up arrow
                     strings[selection][1] = options[0];
-                    exitloop=1;                    
+                    exitloop=1;
+                                       
                     break;
+                    
                 case 66: // Down arrow
                     strings[selection][1] = options[1];
                     exitloop=1;
@@ -73,12 +78,11 @@ int main(int argc, char **argv) {
     do {
         int skip = 0;
 
-        printf("\e[1;1H\e[2J"); // codice speciale che elimina i contenuti dello schermo a ogni loop
+        printf("\e[1;1H\e[2J"); // Special code that clears the screen at every cicle
 
-        // se premuto
         if(!pressed){
-            // TODO non va bene che sia un for loop di tutte le opzioni forse
-            // visualizzo la lista principale
+           
+            // Print the menu
             for (int i = 0; i<selmax; i++){
 
                 if(i == selection){
@@ -103,7 +107,8 @@ int main(int argc, char **argv) {
             }
             
             printf("%s\n", strings[selection][0]);
-            // Frecce direzione
+            
+            // "Frecce direzione"
             int inputfrecce;
             if(selection == 7-1){
                 printf("\nNumero dei lampeggi : %d \n Inserire nuovo valore : ", numlampeggi);
@@ -136,11 +141,11 @@ int main(int argc, char **argv) {
         }
 
         if(!skip){
-        // prendo il carattere necessario
+        // Get the necessary character
         fgets(inputbuffer, 100, stdin);
 
 
-        // modifico la selezione in base al valore di c
+        // Modify the selection according to the inserted value
         if(!pressed){
 
             switch(inputbuffer[2]) {
@@ -168,7 +173,7 @@ int main(int argc, char **argv) {
         }
         
 
-        // loop della selezione su e giu
+        // Selection loop (up and down)
         if (selection < 1-1) {
             selection = selmax-1;
         } else if (selection > selmax-1) {
@@ -181,11 +186,11 @@ int main(int argc, char **argv) {
             subselection = 1-1;
         }
 
-        // conferma selezione
+        // Confirm selection
         if(inputbuffer[0]==10 && pressed){
             pressed = 0;
 
-            // se stiamo settando gli ON e OFF
+            // If we are setting "ON" and "OFF"
             if(selection == 4-1 || selection == 5-1){
                 strings[selection][1] = options[subselection];
             }

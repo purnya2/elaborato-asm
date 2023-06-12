@@ -1,347 +1,415 @@
+##########################################################################
+# filename: main.s
+##########################################################################
 
-.data
+# Global variables section
 
-    # variable that reserves space of 64 bytes as a buffer for the sys_read call
-    input_buffer: .space 64
+.section .data	
+
+	# General useful data	   
+
+	input_buffer:					# Variable that reserves space of 64 bytes as a buffer for the sys_read call (large space!)
+    		.space 64       
 
 
-    notselectedicon: 
-        .string "[ ] "
-    selectedicon: 
-        .string "[o] "
-    selection: 
-        .long 0
+    	notselectedicon: 
+        	.string "[ ] "
+        	
+    	selectedicon: 
+        	.string "[o] "
+        	
+    	selection: 
+        	.long 0
 
-    maxselect:
-        .long 6
+    	maxselect:
+        	.long 6
 
-    up:
-        .byte 'A'
-    down:
-        .byte 'B'
-    right:
-        .byte 'C'
+    	up:
+        	.byte 'A'
+        	
+    	down:
+    	    	.byte 'B'
+    	    	
+	right:
+        	.byte 'C'
 
-    lampeggi:
-            .long 3
+	lampeggi:
+		.long 3
+		
+		
 
-    # ### Menu options########################################################
+    	# Menu options
+    
         opt1:
-            .string    "Setting Automobile: "
-            len1 = . - opt1 
+        	.string    "Setting Automobile: "
+            	len1 = . - opt1 
 
         opt1supervisor:
-            .string    "Setting Automobile (supervisor): "
-            len1supervisor = . - opt1supervisor 
+            	.string    "Setting Automobile (supervisor): "
+            	len1supervisor = . - opt1supervisor 
         opt2:
-            .string    "Data: "
-            len2 = . - opt2 
+            	.string    "Data: "
+            	len2 = . - opt2 
         opt3:
-            .string    "Ora: "
-            len3 = . - opt3 
+            	.string    "Ora: "
+            	len3 = . - opt3 
         opt4:
-            .string    "Blocco automatico porte: "
-            len4 = . - opt4 
+            	.string    "Blocco automatico porte: "
+            	len4 = . - opt4 
         opt5:
-            .string    "Back-home: "
-            len5 = . - opt5 
+            	.string    "Back-home: "
+            	len5 = . - opt5 
         opt6:
-            .string    "Check olio "
-            len6 = . - opt6
+            	.string    "Check olio "
+            	len6 = . - opt6
         opt7:
-            .string    "Freccie direzione "
-            len7 = . - opt7
+            	.string    "Frecce direzione "
+            	len7 = . - opt7
         opt8:
-            .string    "Reset pressione gomme "
-            len8 = . - opt8
+            	.string    "Reset pressione gomme "
+            	len8 = . - opt8
 
-    # ########################################################################
+    
 
-    # ### Menu values#########################################################
-        v1:
-            .string    "\n"
-            vlen1 = . - v1 
+    	# Menu values
+    
+	v1:
+        	.string    "\n"
+         	vlen1 = . - v1 
         v2:
-            .string    "15/06/2014\n"
-            vlen2 = . - v2 
+         	.string    "15/06/2014\n"
+        	vlen2 = . - v2 
         v3:
-            .string    "15:32\n"
-            vlen3 = . - v3 
+         	.string    "15:32\n"
+         	vlen3 = . - v3 
         v4:
-            .string    "ON\n"
-            vlen4 = . - v4 
+         	.string    "ON\n"
+            	vlen4 = . - v4 
         v5:
-            .string    "ON\n"
-            vlen5 = . - v5 
+            	.string    "ON\n"
+           	 vlen5 = . - v5 
         v6:
-            .string    "\n"
-            vlen6 = . - v6
-        v7:
-            .string    "\n"
-            vlen7 = . - v7
+            	.string    "\n"
+           	 vlen6 = . - v6
+	v7:
+            	.string    "\n"
+            	vlen7 = . - v7
         v8:
-            .string    "\n"
-            vlen8 = . - v8
-
-    # ########################################################################
+            	.string    "\n"
+            	vlen8 = . - v8
 
 
 
-    # arrays of pointers towards the options, values, and their lengths
-        options:
-            .long opt1, opt2, opt3, opt4, opt5, opt6, opt7, opt8
+    	# Arrays of pointers towards the options, values, and their lengths
+    	
+	options:
+        	.long opt1, opt2, opt3, opt4, opt5, opt6, opt7, opt8
+        	
         optionslen:
-            .long len1, len2, len3, len4, len5, len6, len7, len8
+        	.long len1, len2, len3, len4, len5, len6, len7, len8
 
         values:
-            .long v1, v2, v3, v4, v5, v6, v7, v8
+        	.long v1, v2, v3, v4, v5, v6, v7, v8
             
         valueslen:
-            .long vlen1, vlen2, vlen3, vlen4, vlen5, vlen6, vlen7, vlen8
-    #key required to access supervisore mode
-    superkey: 
-        .string "2244"
+		.long vlen1, vlen2, vlen3, vlen4, vlen5, vlen6, vlen7, vlen8
+            
+            
+            
+    	# Key required to access supervisore mode
+    	
+	superkey: 
+        	.string "2244"
+        	
 
-.global  _start
-.text
+# Instructions section
+
+.section .text		
+
+	.global  _start
 
 _start:
 
-    call clear # Clear the screen
+	# Clear the screen
+	
+	call	clear
 
-    # Check command line argument count
-    movl    (%esp), %ecx
-    cmpl    $1, %ecx
-    jle     exitcheck
+	# Check command line argument count
+	
+    	movl    (%esp), %ecx			# Put in ECX the value inside the cell pointed by stack pointer (to get the argument count)
+    	cmpl	$1, %ecx     		   	# Check if it's equal to one (there's only one argument, the program's name)
+    	je     exitcheck       		   	# Exit this check if there is only one argument
 
-    # compare the string of the first argument with the superkey variable
-    movl    8(%esp), %esi
-    leal    superkey, %edi 
-    cmpsl                                   # compare the strings stored in %esi and %edi (usually cmpsl ALWAYS compares ONLY between %esi and %edi)
-    jne     exitcheck                       # if it's not equal, don't do the following operations and exit to this label
+    	# Compare the string of the first argument with the "superkey" variable
+    	
+    	movl    8(%esp), %esi			# Get the value of the first parameter (4 characters, one memory cell if one cell is 32 bit wide)
+    	leal	superkey, %edi 			
+    	cmpsl                                   # Compare the strings stored in %ESI and %EDI (usually cmpsl ALWAYS compares ONLY between %ESI and %EDI)
+    	jne	exitcheck                       # If the code is not the one defined in "superkey", don't allow the supervisor mode and jump in the next label
 
-    movl    $opt1supervisor, options        # Modify the first option to make it look like "Setting Automobile (supervisor):"
-    movl    $len1supervisor, optionslen     # Modify the length as well, as it's necessary for the sys_write call
+    	movl    $opt1supervisor, options        # Modify the first option to make it look like "Setting Automobile (supervisor):"
+    	movl    $len1supervisor, optionslen     # Modify the length as well, as it's necessary for the "sys_write" call
 
-    movl    $8, maxselect                   # increase the amount of menu options that will be shown
+    	movl    $8, maxselect                   # Increase the amount of menu options that will be shown
 
-    exitcheck:
+exitcheck:
 
-    movl    $0, %ecx                        # ecx here is used as a variable for the index value that we use loop through 6 times (8 if the supervisore mode is enabled)
-    movl    $0, %esi                        # this contains the shift value used to iterate through an array. (in C, it's used as if we're doing "array[esi]")
+    	movl    $0, %ecx                        # Register ECX here is used as a variable for the index value that we use loop through 6 times (8 if the supervisore mode is enabled)
+    	movl    $0, %esi                        # This contains the shift value used to iterate through an array (in C, it's used as if we're doing "array[ESI]")
 
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # START OF THE MENU LOOP
+# START OF THE MENU LOOP
     
-        menuloop: # start of the loop that shows the main menu by showing the lines loop by loop
+menuloop: 		   		 	# Start of the loop that shows the main menu by showing the lines one by one
 
-        cmpl    maxselect,%ecx              # If the index has reached the end of the iterations(6 or 8), then we jump to the endloop label, in order to, well, end the loop
+        cmpl    maxselect,%ecx           	# If the index has reached the end of the iterations(6 or 8), then we jump to the endloop label, in order to, well, end the loop
         je      endmenuloop
 
-        pushl   %ecx                        # temporarily push in the stack the index of the loop inside ecx, on top of the stack, 
-                                            # because we need to use the ECX register for the sys_write interrupt
+        pushl	%ecx                        	# Temporarily push in the stack the index of the loop inside ecx, on top of the stack (We'll need ECX  later)
 
 
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         # PRINT SELECTION (EITHER [ ] OR [o])
 
-            popl    %ecx                    # Temporarily retrieve from the stack what position/index we're in
-            cmpl    selection, %ecx         # Check if the current number line matches with the number of the selection.
-            pushl   %ecx                    # Put back in the stack the position/index
-            jne     notselected             # If it's not equal, jump to the label that prints "[ ] ", otherwise do the following that will print "[o] "
+	popl    %ecx                    	# Temporarily retrieve from the stack what position/index we're in
+        cmpl    selection, %ecx         	# Check if the current number line matches with the number of the selection
+        pushl   %ecx                    	# Put back in the stack the position/index
+        jne     notselected             	# If it's not equal, jump to the label that prints "[ ] ", otherwise do the following that will print "[o] "
 
-            movl	$4,%edx                 # length of the string (if you count "[o] " you can see that it's made of 4 characters/4 bytes)	       
-            leal	selectedicon,%ecx		# string to write on the screen (print "[o] ")
-            movl	$1, %ebx		        # file descriptor (stdout)
-            movl	$4,%eax		            # system call number (sys_write)
-            int	    $0x80                   # poke the kernel to tell it that we want to (EAX)SYS_WRITE the (ECX)string that is (EDX)4 bytes long in the (EBX)stdout
+        movl	$4,%edx                 	# Length of the string (if you count "[o] " you can see that it's made of 4 characters/4 bytes)	       
+        leal	selectedicon,%ecx		# String to write on the screen (print "[o] ")
+        movl	$1, %ebx		        # File descriptor (stdout)
+        movl	$4,%eax		            	# System call number (sys_write)
+        int	$0x80                  		# Poke the kernel to tell it that we want to (EAX)SYS_WRITE the (ECX)string that is (EDX)4 bytes long in the (EBX)stdout
 
-            jmp exitselection               # Here we have printed "[o] "! if we don't want to also print "[ ] " we must jump into this label in order to avoid the next lines of code
+        jmp	exitselection  			# Here we have printed "[o] "! if we don't want to also print "[ ] " we must jump into this label in order to avoid the next lines of code
 
-            notselected:                    # If we have to write "[ ] " we need to be jumped here
+notselected:                    		# If we have to write "[ ] " we need to be jumped here
 
-            movl	$4,%edx                 # length of the string (if you count "[ ] " you can see that it's STILL made of 4 characters/4 bytes)	       
-            leal	notselectedicon,%ecx    # string to write on the screen (print "[ ] ")
-            movl	$1, %ebx		        # file descriptor (stdout)
-            movl	$4,%eax		            # system call number (sys_write)
-            int	    $0x80                   # poke the kernel to tell it that we want to (EAX)SYS_WRITE the (ECX)string that is (EDX)4 bytes long in the (EBX)stdout
+	movl	$4,%edx                 	# Length of the string (if you count "[ ] " you can see that it's STILL made of 4 characters/4 bytes)	       
+	leal	notselectedicon,%ecx    	# String to write on the screen (print "[ ] ")
+	movl	$1, %ebx			# File descriptor (stdout)
+	movl	$4,%eax		        	# System call number (sys_write)
+	int	$0x80                  	 	# Poke the kernel to tell it that we want to (EAX)SYS_WRITE the (ECX)string that is (EDX)4 bytes long in the (EBX)stdout
 
-            exitselection:
-            
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+exitselection:
 
-
-        #here we access the arrays optionslen and options. We shift the position of the index by updating the %esi value in each loop
-        movl	optionslen(%esi),%edx   # length of the string      
-        movl	options(%esi),%ecx		# string to write on the screen
-        movl	$1, %ebx		        # file descriptor (stdout)
-        movl	$4,%eax		            # system call number (sys_write)
-        int	    $0x80    
-
-        #here we access the arrays valueslen and values. We shift the position of the index by updating the %esi value in each loop
-        movl	valueslen(%esi),%edx    # length of the string	       
-        movl	values(%esi),%ecx		# string to write on the screen
-        movl	$1, %ebx		        # file descriptor (stdout)
-        movl	$4,%eax		            # system call number (sys_write)
-        int	    $0x80  
-
-        popl    %ecx                    # get back the index value by popping the stack and putting the value onto ecx
-
-        addl    $1, %ecx                # add 1 to ECX, this is the same as doing i++ in a for loop in C
-        addl    $4, %esi                # we shift by 4 the value of esi because the arrays are composed of pointers that are 4 bytes long
-
-        jmp     menuloop                # repeat the loop
-
-        endmenuloop:
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
- 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # READ INPUT
-        movl    $0, input_buffer        # reset the input_buffer (we need to do this because the input_buffer contains dirty values from previous iterations)
-
-        movl	$128,%edx	            # length of the buffer
-        movl	$input_buffer,%ecx		# where to store the bufffer
-        movl	$0, %ebx		        # file descriptor (stdin)
-        movl	$3,%eax		            # system call number (sys_read)
+        # Here we access the arrays optionslen and options
+        # We shift the position of the index by updating the %ESI value in each loop
+        
+        movl	optionslen(%esi),%edx   	
+        movl	options(%esi),%ecx		
+        movl	$1, %ebx		        
+        movl	$4,%eax		            	
+        int	$0x80    
+	
+        # Here we access the arrays valueslen and values
+        # We shift the position of the index by updating the %ESI value in each loop
+        
+	movl	valueslen(%esi),%edx          
+        movl	values(%esi),%ecx		
+        movl	$1, %ebx		        
+        movl	$4,%eax		            
         int	$0x80  
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-    call    clear
+        popl    %ecx                   	 	# Get back the index value by popping the stack and putting the value onto ECX
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # SELECTION LOGIC  
+        addl    $1, %ecx                	# Add '1' to ECX, this is the same as doing i++ in a for loop in C
+        addl    $4, %esi                	# Shift by 4 the value of esi because the arrays are composed of pointers that are 4 bytes long
+
+        jmp     menuloop                	# Repeat the loop
+
+endmenuloop:
+
+        
+	# # # # # # # # # # # # # # # # # # # # READ INPUT ZONE # # # # # # # # # # # # # # # # # #
+
+        movl $0, input_buffer		    	# Reset the input_buffer (we need to do this because the input_buffer contains dirty values from previous iterations)
+
+        movl	$128,%edx	            	# Length of the buffer
+        movl	$input_buffer,%ecx	    	# Where to store the bufffer
+        movl	$0, %ebx		    	# File descriptor (stdin)
+        movl	$3,%eax		            	# System call number (sys_read)
+        int	$0x80  			    	# Poke the kernel
+
+   	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #       
+         
+	call	clear  				# Clear the screen
+	
+	# # # # # # # # # # # # # # # # # # SUBSELECTION LOGIC ZONE # # # # # # # # # # # # # # # #
+
+    	
         # This is the part where we handle how the movement of the selection goes thanks to the input by the user
 
+        # We first need to check if the input is valid
+        # We are specifically checking here if there's an escape character($10) in the third byte of the input
+        # This is to invalidate an output that looks like up+up+enter or down+right+enter 
+        # Only inputs that are valid are strictly up+enter, down+enter, right+enter
+        
+        # Check if the second character is an "ENTER"
+        	
+        movl	$3, %esi                	# Shift is three because the arrow is in the form ".[*" where '*' is replaced according to the type of arrow
+        movb    input_buffer(%esi), %cl 	
+        movb    $10, %ch		  	
+        cmpb    %ch, %cl    			
+        jne     exitselectionlogic              # Invalid input was found, so exit the selection logic section without doing any change (then loop will be repeated)
 
-        # We first need to check of the input is valid. We are specifically checking here if there's an escape character($10) in the 
-        # third byte of the input. This is to invalidate an output that looks like up+up+enter or down+right+enter. 
-        # I have decided that the only inputs that are valid are strictly up+enter, down+enter, right+enter
-        movl    $3, %esi                
-        movb    input_buffer(%esi), %cl
-        movb    $10, %ch
-        cmpb    %ch, %cl    
-        jne     exitselectionlogic              # Invalid input was found! exit the selection logic section without doing any change
+	# Load the first character and do things according to it	
+	
+        movl	$2, %esi				
+        movb 	input_buffer(%esi), %bl
 
-        movl $2, %esi
-        movb input_buffer(%esi), %bl
+        cmpb 	%bl, up                         # Check ARROW UP
+        je 	selectup
 
-        cmpb %bl, up                            # Check ARROW UP
-        je selectup
+        cmpb 	%bl, down                       # Check ARROW DOWN
+        je 	selectdown
 
-        cmpb %bl, down                          # Check ARROW DOWN
-        je selectdown
+        cmpb 	%bl, right                      # Check ARROW RIGHT
+        je 	sottomenu                       # If the arrow right is selected, we will hop into a "sottomenu"
 
-        cmpb %bl, right                         # Check ARROW RIGHT
-        je sottomenu                            # if the arrow right is selected, we will hop into a sottomenu
+        jmp 	exitselectionlogic		# No more need to select something as something as just been selected
 
-        jmp exitselectionlogic
+# Handle arrow up
 
-        selectup:                               # handle arrow up
-        subl $1, selection
-        cmpl $-1, selection
-        jne exitselectionlogic
-        movl maxselect, %ebx
-        subl $1, %ebx
-        movl %ebx, selection
-        jmp exitselectionlogic
+selectup:                               	
 
-        selectdown:                             # handle arrow down
-        addl $1, selection
-        movl maxselect, %ebx
-        cmpl %ebx, selection
-        jne exitselectionlogic
-        movl $0, selection
-        jmp exitselectionlogic
+        subl	$1, selection			# Go backwards		
+        cmpl 	$-1, selection
+        jne 	exitselectionlogic		# Everything is ok if selection is not '-1', we can exit, otherwise we have to skip to the last menu option
+        movl 	maxselect, %ebx
+        subl 	$1, %ebx			# Here we have maxselect-1
+        movl 	%ebx, selection	        	# We select the last item in the menu (that is in position 'maxselect-1')
+        jmp 	exitselectionlogic
 
-        exitselectionlogic:
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Handle arrow down
 
-    returntomenuloop:
+ selectdown:                             
+ 
+        addl	$1, selection			# Go forward
+        movl	maxselect, %ebx	
+        cmpl	%ebx, selection
+        jne	exitselectionlogic		# Everything is ok if selection is not equal to "maxselect" (the maximum is 'maxselect-1'), otherwise we skip to the first option
+        movl	$0, selection
+        jmp	exitselectionlogic		# Unuseful here but it continues the pattern
 
-    # In order to avoid unexpected behavior, we reset the following registers
-    xorl    %ecx, %ecx                  # reset the register ecx
-    xorl    %esi, %esi                  # reset the register esi
+exitselectionlogic:
 
-    jmp     menuloop
+	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+returntomenuloop:
+
+	# In order to avoid unexpected behavior, we reset the following registers
+    
+    	xorl    %ecx, %ecx                  	# Reset the register ECX
+    	xorl    %esi, %esi                  	# Reset the register ESI
+
+    	jmp     menuloop
+
+# Handle "sottomenu"
 
 sottomenu:
-    cmpl    $0, selection               # Setting Automobile 
-    je      returntomenuloop  
 
-    cmpl    $1, selection               # Data !! NOT IMPLEMENTED !!
-    je      returntomenuloop
+    	cmpl    $0, selection               	# Setting Automobile 
+    	je      returntomenuloop  
 
-    cmpl    $2, selection               # Ora !! NOT IMPLEMENTED !!
-    je      returntomenuloop
+    	cmpl    $1, selection               	# Data !! NOT IMPLEMENTED !!
+    	je      returntomenuloop
 
-    cmpl    $3, selection               # Blocco automatico porte
-    je      sm_bloccoautomaticoporte
+    	cmpl    $2, selection               	# Ora !! NOT IMPLEMENTED !!
+    	je      returntomenuloop
 
-    cmpl    $4, selection               # Back-home
-    je      sm_backhome
+    	cmpl    $3, selection               	# Blocco automatico porte
+    	je      sm_bloccoautomaticoporte
 
-    cmpl    $5, selection               # Check Olio !! NOT IMPLEMENTED !!
-    je      returntomenuloop
+    	cmpl    $4, selection               	# Back-home
+    	je      sm_backhome
 
-    cmpl    $6, selection               # Freccie direzione
-    je      sm_frecciedirezione
+    	cmpl    $5, selection               	# Check Olio !! NOT IMPLEMENTED !!
+    	je      returntomenuloop
 
-    cmpl    $7, selection               # Reset pressione Gomme
-    je      sm_pressionegomme
+    	cmpl    $6, selection               	# Frecce direzione
+    	je      sm_freccedirezione
 
+    	cmpl    $7, selection               	# Reset pressione Gomme
+    	je      sm_pressionegomme
 
-    je      returntomenuloop
-
+#
 
 sm_bloccoautomaticoporte:
-    call    clear
 
-    movl    $opt4, %ecx                 # ECX is used in the function to store the string of the title
-    movl    $len4, %edx                 # EDX is used in the function to store the length of the title
+	call    clear				# Option is selected, clear the screen
 
-    call    onoffmenu                   # Function onoffmenu
-    movl    $12, %esi
+    	# Move the title "Blocco automatico porte: " and it's length to the registers, they will be used by the function called "onoffmenu"
+    
+    	movl    $opt4, %ecx                 	# ECX is used in the function to store the string of the title
+    	movl    $len4, %edx                	# EDX is used in the function to store the length of the title
 
-    # Modify the values in the right position
-    movl    %eax, values(%esi)
-    movl    %ebx, valueslen(%esi)
+	# Put the current value and it's length into EAX and EBX, they'll be used by the function called
+	
+	movl	$12, %esi
+    	movl	values(%esi), %eax
+    	movl	valueslen(%esi), %ebx
 
+	# Call the function
 
-    jmp returntomenuloop
+    	call    onoffmenu                   	# Function onoffmenu
+    	movl    $12, %esi
+
+    	# Modify the values in the right position taking them from the registers modified by the function called
+    	
+    	movl    %eax, values(%esi)
+    	movl    %ebx, valueslen(%esi)
+
+	jmp	returntomenuloop
 
 
 sm_backhome:
 
-    call clear
-
-    movl $opt5, %ecx
-    movl $len5, %edx
-
-    call onoffmenu
-    movl $16, %esi                      # notice how the value is +4 compared to the previous sottomenu
-
-    movl %eax, values(%esi)
-    movl %ebx, valueslen(%esi)
-
-    jmp returntomenuloop
-
-
-
-sm_frecciedirezione:
-
-    movl lampeggi, %eax                 # EAX is used in the function to let it know how many LAMPEGGI we got
-
-    movl $opt7, %ecx
-    movl $len7, %edx
+	call    clear				# Option is selected, clear the screen
     
-    call frecciedirezione
-    movb %ah, lampeggi                  # Set new value for LAMPEGGI
-    jmp returntomenuloop
+    	#We move the title "Back-home: " and it's length to the registers, they will be used by the function called "onoffmenu"
+    	
+    	movl	$opt5, %ecx
+    	movl	$len5, %edx
+
+    	# Put the current value and it's length into EAX and EBX, they'll be used by the function called
+    	
+    	movl	$16, %esi
+    	movl	values(%esi), %eax
+    	movl  	valueslen(%esi), %ebx
+
+	# Call the function
+	
+    	call	onoffmenu			# Call the function
+   	movl	$16, %esi                       # Notice how the value is "+4" compared to the previous sottomenu
+
+    	movl	%eax, values(%esi)
+    	movl	%ebx, valueslen(%esi)
+
+    	jmp	returntomenuloop
+
+
+sm_freccedirezione:
+
+	movl	lampeggi, %eax                 # EAX is used in the function to let it know how many LAMPEGGI we got
+
+	# We move the title "Frecce direzione " and it's length to the registers, they will be used by the function called "freccedirezione"
+	
+	movl	$opt7, %ecx
+	movl	$len7, %edx
+    
+    	# Call the function and save the new value
+    	
+	call	freccedirezione
+    	movb	%ah, lampeggi                  # Set new value for LAMPEGGI. Value is taken from the bits 8 to 15 of EAX. It has been set by the function called one line ago.
+    	jmp	returntomenuloop
 
     
 
 sm_pressionegomme:
-    call pressionegomme                 # pretty simple function
-    jmp returntomenuloop
+
+    call	pressionegomme                 # Pretty simple function, no need to pass parameters
+    jmp		returntomenuloop
+    
+    
+    
