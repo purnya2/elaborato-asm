@@ -6,7 +6,7 @@ SRC_DIR = src
 OBJ_DIR = obj
 BIN_DIR = bin
 
-SRCS = $(SRC_DIR)/main.s $(SRC_DIR)/onoffmenu.s $(SRC_DIR)/clear.s $(SRC_DIR)/frecciedirezione.s $(SRC_DIR)/pressionegomme.s
+SRCS = $(SRC_DIR)/main.s $(SRC_DIR)/onoffmenu.s $(SRC_DIR)/clear.s $(SRC_DIR)/freccedirezione.s $(SRC_DIR)/pressionegomme.s
 
 OBJS = $(patsubst $(SRC_DIR)/%.s, $(OBJ_DIR)/%.o, $(SRCS))
 

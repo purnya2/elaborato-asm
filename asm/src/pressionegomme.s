@@ -8,7 +8,7 @@
 
 	
 	
-	timespec:			# Struct used from the function "nanosleep" by the library "time.h"
+	timespec:			# Struct used from the function "nanosleep" 
     
         	.long 0			# How many seconds to wait
         	.long 0 	  	# How many nanoseconds to wait (in addition to the seconds)
@@ -34,7 +34,7 @@
 pressionegomme:
 
 	xorl	%ecx, %ecx		# Clear ECX register
-	movl	$2, timespec		# Initialize the structure "timespec" with a number of seconds equal to two
+	movl	$1, timespec	# Initialize the structure "timespec" with a number of seconds equal to one
 
 pressioneloop:
     
