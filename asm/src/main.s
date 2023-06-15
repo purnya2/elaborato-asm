@@ -74,29 +74,29 @@
     	# Menu values
     
 	v1:
-        	.string    "\n"
-         	vlen1 = . - v1 
-        v2:
-         	.string    "15/06/2014\n"
-        	vlen2 = . - v2 
-        v3:
-         	.string    "15:32\n"
-         	vlen3 = . - v3 
-        v4:
-         	.string    "ON\n"
-            	vlen4 = . - v4 
-        v5:
-            	.string    "ON\n"
-           	 vlen5 = . - v5 
-        v6:
-            	.string    "\n"
-           	 vlen6 = . - v6
+		.string    "\n"
+		vlen1 = . - v1 
+	v2:
+		.string    "15/06/2014\n"
+		vlen2 = . - v2 
+	v3:
+		.string    "15:32\n"
+		vlen3 = . - v3 
+	v4:
+		.string    "ON\n"
+		vlen4 = . - v4 
+	v5:
+		.string    "ON\n"
+		vlen5 = . - v5 
+	v6:
+		.string    "\n"
+		vlen6 = . - v6
 	v7:
-            	.string    "\n"
-            	vlen7 = . - v7
-        v8:
-            	.string    "\n"
-            	vlen8 = . - v8
+		.string    "\n"
+		vlen7 = . - v7
+	v8:
+		.string    "\n"
+		vlen8 = . - v8
 
 
 
